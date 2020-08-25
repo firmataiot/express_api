@@ -1,19 +1,28 @@
 const express = require('express')
 const app = express()
-const port = 3000
-let state='conn'
-const Firmata = require("firmata");
 var cors = require('cors')
-const board = new Firmata("COM3");
- 
+const server_port = 3000
+let state='conn'
+const Firmata = require("firmata");const SerialPort = require('serialport')
+const port = new SerialPort('COM9', {
+  baudRate: 9600
+})
+// const port = new SerialPort('COM5', {
+//     baudRate: 57600
+// })
+const board = new Firmata(port);
 board.on("ready", function(){
     state='ready'
 });
 
 app.use(cors())
-
 app.get('/', (req, res) => {
   res.send(state)
+})
+
+
+app.get('/pins', (req, res) => {
+    res.json(board.pins)
 })
 
 app.get('/set/:pin/in', (req, res) => {
@@ -49,7 +58,7 @@ app.get('/set/:pin/out', (req, res) => {
 })
 
 
-app.get('/:pin/:value', (req, res) => {
+app.get('/digital/:pin/:value', (req, res) => {
     const pin = parseInt(req.params.pin)
     const val = parseInt(req.params.value)
     if(state=='ready'){
@@ -69,10 +78,11 @@ app.get('/:pin/:value', (req, res) => {
     }
 })
 
-
-app.get('/pwm/:pin/:value', (req, res) => {
+//same the pwm
+app.get('/analog/:pin/:value', (req, res) => {
     const pin = parseInt(req.params.pin)
-    const val = parseInt(req.params.value)
+    let val = parseInt(req.params.value)
+    board.pinMode(pin,board.MODES.PWM)
     if(val>255){
         val=255
     }
@@ -87,6 +97,29 @@ app.get('/pwm/:pin/:value', (req, res) => {
             msg:{
                 pin:pin,
                 val:val
+            }
+        })
+    }else{
+        res.json({
+            err:true,
+            msg:'not ready'
+        })
+    }
+})
+
+
+app.get('/servo/:pin/:degree', (req, res) => {
+    const pin = parseInt(req.params.pin)
+    let degree = parseInt(req.params.degree)
+    board.pinMode(pin,board.MODES.SERVO)
+    
+    if(state=='ready'){
+        board.servoWrite(pin,degree)
+        res.json({
+            err:false,
+            msg:{
+                pin:pin,
+                degree:degree
             }
         })
     }else{
@@ -116,6 +149,6 @@ app.get('/:pin', (req, res) => {
     }
 })
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+app.listen(server_port, () => {
+  console.log(`Example app listening at http://localhost:${server_port}`)
 })
