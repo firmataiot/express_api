@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 var cors = require('cors')
-const server_port = 3000
+const server_port = 8000
 let state='conn'
 const Firmata = require("firmata");const SerialPort = require('serialport')
 const port = new SerialPort('COM9', {
@@ -149,6 +149,6 @@ app.get('/:pin', (req, res) => {
     }
 })
 
-app.listen(server_port, () => {
+app.listen(server_port, '0.0.0.0',() => {
   console.log(`Example app listening at http://localhost:${server_port}`)
 })
